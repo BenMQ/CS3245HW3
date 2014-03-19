@@ -2,9 +2,7 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem.porter import *
 from nltk.corpus import stopwords
 from os import walk
-import sys, json
-import getopt
-import config
+import sys, json, getopt, config, math
 
 
 #######################################################################
@@ -27,17 +25,17 @@ def index(docs_dir, dict_file, posting_file):
 	filenames.sort()
 
 	posting_array_dict = generate_posting_array_dict(filenames)
+	print '\nstart calculating document vector lengths'
 
+	lengths_dict = generate_document_vector_length(filenames, posting_array_dict)
 	print "\nstart processing output"
 
-	file_amt = len(filenames)
-
-	generate_output(file_amt, posting_array_dict, dict_file, posting_file)
+	generate_output(posting_array_dict, lengths_dict, dict_file, posting_file)
 
 	print "\nmission completed :)"
 
 
-def generate_output(file_amt, dict, dict_file, posting_file):
+def generate_output(dict, lengths, dict_file, posting_file):
 	
 	# init stdout
 	curr = 0
@@ -50,8 +48,8 @@ def generate_output(file_amt, dict, dict_file, posting_file):
 	dict_content = ""
 
 	# init content for postings file
-	# header: json of all filenames in the corpus
-	posting_header = json.dumps(file_amt) + '\n'
+	# header: file lengths
+	posting_header = json.dumps(lengths) + '\n'
 	posting_f = open(posting_file, 'wb')
 	posting_f.write(posting_header)
 	
@@ -113,12 +111,37 @@ def generate_posting_array_dict(filenames):
 					posting_array_dict[key][filename] = 1
 			else:
 				posting_array_dict[key] = {filename: 1}
+
 		curr += 1
 		sys.stdout.write("\rindexing: " + ("%.2f" % (100.0 * curr / total)) + '%')
 		sys.stdout.flush()
 	return posting_array_dict
 
+def generate_document_vector_length(filenames, dict):
+	# init stdout 
+	curr = 0
+	total = len(filenames)
+	lengths_dict = {}
 
+	for filename in filenames:
+		axis = {}
+		tokens = generate_tokens(str(filename))
+		for token in tokens:
+			if token in axis:
+				axis[token] += 1
+			else:
+				axis[token] = 1
+		sum_of_squared = 0
+		for token, freq in axis.iteritems():
+			d_tf = float(1) + math.log(freq, 10)
+			d_df = len(dict[token])
+			d_idf = math.log(float(total) / d_df, 10) if d_df != 0 else 1
+			sum_of_squared += (d_tf * d_idf) ** 2
+		lengths_dict[filename] = math.sqrt(sum_of_squared)
+		curr += 1
+		sys.stdout.write("\rprocessing: " + ("%.2f" % (100.0 * curr / total)) + '%')
+		sys.stdout.flush()
+	return lengths_dict
 
 #######################################################################
 # Tokenization and Stemming 
