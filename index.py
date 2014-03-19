@@ -3,8 +3,6 @@ from nltk.stem.porter import *
 from nltk.corpus import stopwords
 from os import walk
 import sys, json
-from SkipList import SkipList
-import cPickle as pickle
 import getopt
 import config
 
@@ -57,8 +55,8 @@ def generate_output(filenames, dict, dict_file, posting_file):
 	
 	# preparing content to be written into files
 	for key in sorted_keys:
-		skiplist_pos = pickle_and_write(dict[key], posting_f)
-		dict_line = "%(token)s %(length)s %(start)s %(end)s\n"%{'token':str(key), 'length':str(len(dict[key])), 'start':str(skiplist_pos[0]), 'end':str(skiplist_pos[1])}
+		posting_pos = write_posting(dict[key], posting_f)
+		dict_line = "%(token)s %(length)s %(start)s %(end)s\n"%{'token':str(key), 'length':str(len(dict[key])), 'start':str(posting_pos[0]), 'end':str(posting_pos[1])}
 		dict_content = dict_content + dict_line
 		curr += 1
 		sys.stdout.write("\rprocessing: " + ("%.2f" % (100.0 * curr / total)) + '%')
@@ -75,14 +73,12 @@ def generate_output(filenames, dict, dict_file, posting_file):
 # build SkipList for every tokens from its posting array, build skips.
 # pickled each SkipList into string and write into posting files. 
 # return starting and ending position of the SkipList in the positng file
-def pickle_and_write(posting_array, posting_f):
-	skip_list = SkipList(posting_array).build_skips()
-	skip_list_pickled = pickle.dumps(skip_list)
-	skip_list_start = posting_f.tell()
-	posting_f.write(skip_list_pickled + '\n')
-	skip_list_end = posting_f.tell()
-	return skip_list_start, skip_list_end
 
+def write_posting(posting_dict, posting_f):
+	posting_start = posting_f.tell()
+	posting_f.write(json.dumps(posting_dict) + '\n')
+	posting_end = posting_f.tell()
+	return posting_start, posting_end
 
 #######################################################################
 # Generating Posting SkipLists
@@ -109,15 +105,17 @@ def generate_posting_array_dict(filenames):
 		for t in tokens:
 			key = str(t)
 			if key in posting_array_dict:
+				if filename in posting_array_dict[key]:
+					posting_array_dict[key][filename] = posting_array_dict[key][filename] + 1
 				if not filename in posting_array_dict[key]:
-					posting_array_dict[key].append(filename)
+					posting_array_dict[key][filename] = 1
 			else:
-				posting_array_dict[key] = [filename]
+				posting_array_dict[key] = {filename: 1}
 		curr += 1
 		sys.stdout.write("\rindexing: " + ("%.2f" % (100.0 * curr / total)) + '%')
 		sys.stdout.flush()
-
 	return posting_array_dict
+
 
 
 #######################################################################
