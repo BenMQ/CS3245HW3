@@ -30,12 +30,12 @@ def index(docs_dir, dict_file, posting_file):
 
 	print "\nstart processing output"
 
-	generate_output(filenames, posting_array_dict, dict_file, posting_file)
+	generate_output(posting_array_dict, dict_file, posting_file)
 
 	print "\nmission completed :)"
 
 
-def generate_output(filenames, dict, dict_file, posting_file):
+def generate_output(dict, dict_file, posting_file):
 	
 	# init stdout
 	curr = 0
@@ -49,9 +49,9 @@ def generate_output(filenames, dict, dict_file, posting_file):
 
 	# init content for postings file
 	# header: json of all filenames in the corpus
-	posting_header = json.dumps(filenames) + '\n'
+	# posting_header = json.dumps(filenames) + '\n'
 	posting_f = open(posting_file, 'wb')
-	posting_f.write(posting_header)
+	# posting_f.write(posting_header)
 	
 	# preparing content to be written into files
 	for key in sorted_keys:
