@@ -19,6 +19,9 @@ def output(result):
 	out_file.write(' '.join(map(str, result)) + '\n')
 
 def parse_query(raw):
+	# after tokenising the query,
+	# we collect terms into a dictionary of term - term frequency
+	# for later calculation of query tf
 	query = raw.strip().split()
 	query = [normalise_word(w) for w in query]
 	query_dict = {}
@@ -34,10 +37,6 @@ def parse_query(raw):
 #######################################################################
 
 def evaluate(query):
-	"""
-	Evaluate a given query in array of tokens
-	"""
-	
 	master = {}
 	for q in query:
 		postings = lookup(q)
@@ -50,7 +49,7 @@ def evaluate(query):
 	
 	top = []
 	for doc in master:
-		# (cosine similarity score, docID)
+		# candidate is a tuple (cosine similarity score, docID)
 		candidate = (- cos_sim(query, master[doc], DOC_LENGTHS[doc]), doc)
 		heapq.heappush(top, candidate)
 
@@ -61,6 +60,7 @@ def evaluate(query):
 	sorted(result,  cmp=compare)
 	return [x[1] for x in result[:10]]
 
+# sort the candidates first by score, then by docID
 def compare(doc1, doc2):
 	if (doc1[0] == doc2[0]):
 		return int(doc1[1]) - int(doc2[1])
@@ -71,6 +71,9 @@ def compare(doc1, doc2):
 	else:
 		return 1
 
+# cosine similarity caocluated by ltc.lnc
+# note that doc_length is computed during indexing
+# for better performance in normalisation
 def cos_sim(query, doc, doc_length):
 	dot_product = 0
 	q_sum_of_sqr = 0
