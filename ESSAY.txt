@@ -1,3 +1,64 @@
-In this assignment, we didn't ask you to support phrasal queries, which is a feature that is typically supported in web search engines. Describe how you would support phrasal search in conjunction with the VSM model. A sketch of the algorithm is sufficient. (For those of you who like a challenge, please go ahead and implement this feature in your submission but clearly demarcate it in your code and allow this feature to be turned on or off using the command line switch "-x" (where "-x" means to turn on the extended processing of phrasal queries). We will give a small bonus to submissions that achieve this functionality correctly).
-Describe how your search engine reacts to long documents and long queries as compared to short documents and queries. Is the normalization you use sufficient to address the problems (see Section 6.4.4 for a hint)? In your judgement, is the lnc.ltc scheme (n.b., not the ranking scheme you were asked to implement) sufficient for retrieving documents from the Reuters-21578 collection?
-Do you think zone or field parametric indices would be useful for practical search in the Reuters collection? Note: the Reuters collection does have metadata for each article but the quality of the metadata is not uniform, nor are the metadata classifications uniformly applied (some documents have it, some don't). Hint: for the next Homework #4, we will be using field metadata, so if you want to base Homework #4 on your Homework #3, you're welcomed to start support of this early (although no extra credit will be given if it's right).
+1) In this assignment, we didn't ask you to support phrasal queries, which is a feature that is
+typically supported in web search engines. Describe how you would support phrasal search in
+conjunction with the VSM model. A sketch of the algorithm is sufficient. (For those of you who like
+a challenge, please go ahead and implement this feature in your submission but clearly demarcate it
+in your code and allow this feature to be turned on or off using the command line switch "-x" (where
+"-x" means to turn on the extended processing of phrasal queries). We will give a small bonus to
+submissions that achieve this functionality correctly).
+
+i) Construct the postings list with positional index, as outlined in IIR (online edition), p41
+
+ii) For each token in a phrase, we perform positional intersection. i.e. For a phrase "A B", we
+intersect the postings list for A and B, including only common docIDs where A appear with 1 less
+index value than B.
+
+iii) We now have all documents that includes the desired phrase.
+
+iv) Perform the usual VMS algorithm employed in this assignment, treating each word as saparate
+tokens without phrasal context.
+
+v) Intersect the collection of documents from step iii and step iv, and this is the result of the
+query.
+
+
+2) Describe how your search engine reacts to long documents and long queries as compared to short
+documents and queries. Is the normalization you use sufficient to address the problems (see Section
+6.4.4 for a hint)? In your judgement, is the lnc.ltc scheme (n.b., not the ranking scheme you were
+asked to implement) sufficient for retrieving documents from the Reuters-21578 collection?
+
+We tried to duplicate the same document and query into different sizes by concatinating k copies of
+the same content. With longer document, each term appears more, hence tf is increased by k, but
+weighted term frequency (log tf) is increased by log k. The document vector length is also increased
+by k. As our submission normalised the document vector by its document length, longer documents tend
+to have a lower score.
+
+For example both the query "finance market" and "finance market finance market finance market
+finance market finance market" have a score 0.1498872494413242 on doc 1982. But when we
+concatinating 5 copies of 1982 together, we get a score of 0.14952380840514504, slightly lower than
+the sorter version. Ideally we would want the score to remain the same as well.
+
+In reality however, when documents get longer, there may be more distinct terms, so the relative
+frequency between the term and overall length tend to decrease.
+
+For Reuters-21578, lnc.ltc would suffice since most of the documents in collections are sort and are
+of comparable lengths. Furthermore, they usually tend to have fairly comprabable number of distinct
+tokens because the document are short and does not focus on a single topic, or verbose, as defined
+by IIR section 6.4.4. lnc.ltc already accounts for the document length with cosine normalisation.
+Without much variation in document lengths or verbose documents, such scheme would suffice.
+
+
+3) Do you think zone or field parametric indices would be useful for practical search in the Reuters
+collection? Note: the Reuters collection does have metadata for each article but the quality of the
+metadata is not uniform, nor are the metadata classifications uniformly applied (some documents have
+it, some don't). Hint: for the next Homework #4, we will be using field metadata, so if you want to
+base Homework #4 on your Homework #3, you're welcomed to start support of this early (although no
+extra credit will be given if it's right).
+
+Due to non uniform quality of metadata, field parametric indices would not be very helpful. For
+example, searching for all articles produced by author x. If not all works by x have the author
+metadata, the recall would be very poor and potentially being not very useful.
+
+On the other hand, seems that all documents in the collection has its first line as the title and
+the rest as the content. We can therefore form two zones for each document, and zone index would be
+practical in this case since it is complete.
+
