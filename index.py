@@ -1,6 +1,5 @@
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem.porter import *
-from nltk.corpus import stopwords
 from os import walk
 import sys, json, getopt, config, math
 
@@ -151,10 +150,6 @@ def generate_document_vector_length(filenames, dict):
 def generate_tokens(filename):
 	words = tokenize_sentences(filename)
 	tokens = stemming_words(words)
-	if config.ELIMINATE_STOP_WORDS:
-		tokens = filter_stopwords(tokens)
-	if config.ELIMINATE_NUMBERS:
-		tokens = filter_numbers(tokens)
 	return tokens
 
 # tokenize sentences in a file into array of words
@@ -177,19 +172,6 @@ def stemming_words(words):
 		tokens.append(stemmer.stem(w))
 	return tokens
 
-#######################################################################
-# Optimisation (options available in config.py)
-# filter stopwords
-# filter numbers
-#######################################################################
-
-stop = stemming_words(stopwords.words('english'))
-def filter_stopwords(words):
-	return [i for i in words if i not in stop]
-
-def filter_numbers(words):
-	numbers = '^[0-9\.\-,]+$'
-	return [i for i in words if not re.match(numbers, i)]
 
 #######################################################################
 # Main
